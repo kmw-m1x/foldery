@@ -1,0 +1,16 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Give+You+Glory&family=Sriracha&display=swap');
+
+
+.vision-font-eng {
+  font-family: "Give You Glory", cursive;
+  font-weight: 900;
+  font-style: normal;
+}
+
+
+.vision-font-thai {
+  font-family: "Sriracha", cursive;
+  font-weight: 400;
+  font-style: normal;
+}
