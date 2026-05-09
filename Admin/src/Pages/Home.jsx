@@ -83,7 +83,7 @@ const Home = () => {
       >
         <div>
           <p className="text-[#00a3ff] text-[10px] font-black tracking-[0.3em] uppercase mb-1">Admin Portal</p>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">ยินดีต้อนรับกลับมา 👋</h1>
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Blessing Stream Church Admin Test Version</h1>
           <p className="text-slate-400 text-sm mt-1 font-light">คุณสามารถจัดการข้อมูลทั้งหมดได้จากที่นี่</p>
         </div>
       </motion.div>
