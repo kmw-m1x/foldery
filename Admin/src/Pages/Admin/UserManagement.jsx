@@ -217,10 +217,10 @@ export default function UserManagement() {
             <button onClick={fetchUsers} className="flex items-center gap-2 text-slate-400 hover:text-[#00a3ff] transition-colors text-sm font-bold">
               <RefreshCcw size={15} /> Refresh
             </button>
-            <a href="/admin/users/add"
+            <Link to="/admin/users/add"
               className="flex items-center gap-2 bg-[#0054a5] hover:bg-[#00a3ff] text-white font-bold px-4 py-2.5 rounded-xl transition-all text-sm shadow-[0_0_14px_rgba(0,84,165,0.3)]">
               <UserPlus size={15} /> เพิ่ม Admin
-            </a>
+            </Link>
           </div>
         </motion.div>
 
