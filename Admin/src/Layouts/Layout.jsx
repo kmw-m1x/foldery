@@ -4,18 +4,14 @@ import Sidebar from "../Components/sidebar";
 
 export default function Layout() {
   return (
-    <div className="flex min-h-screen bg-[#ece4d4] font-sans">
-      
-      {/* เรียกใช้ Component Sidebar ตรงนี้จบเลย */}
+    <div className="flex min-h-screen bg-[#0d1522] font-['Kanit'] text-white">
       <Sidebar />
-
-      {/* เนื้อหาหลัก (ดันซ้าย 64 หรือ 16rem เพื่อหลบ Sidebar) */}
-      <main className="flex-1 ml-64 p-8 transition-all duration-300">
+      {/* Offset: ml-60 (sidebar width) on desktop, pt-14 (topbar height) on mobile */}
+      <main className="flex-1 md:ml-60 pt-14 md:pt-0 transition-all duration-300">
         <div className="max-w-7xl mx-auto animate-fade-in-up">
-           <Outlet />
+          <Outlet />
         </div>
       </main>
-
     </div>
   );
 }

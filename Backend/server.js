@@ -1,4 +1,4 @@
-require('dotenv').config(); // โหลด .env บรรทัดแรกเสมอ!
+require('dotenv').config({ override: true }); // โหลด .env บรรทัดแรกเสมอ! และบังคับทับค่าเดิมในระบบ
 
 const app = require('./app'); // เรียกสมองมา
 const connectDB = require('./Config/db'); // เรียกฐานข้อมูลมา

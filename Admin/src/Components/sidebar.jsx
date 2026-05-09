@@ -1,78 +1,181 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, Settings, LogOut } from "lucide-react";
+import {
+  LayoutDashboard, Users, Map, Settings,
+  LogOut, Menu, X, ChevronRight, Calendar, UserPlus
+} from "lucide-react";
+import { useAuth } from "../Context/AuthContext";
+
+const navItems = [
+  { to: "/admin/dashboard",      icon: <LayoutDashboard size={18} />, label: "Dashboard"       },
+  { to: "/admin/church-stats",   icon: <Users size={18} />,           label: "Church Stats"    },
+  { to: "/admin/update",         icon: <Users size={18} />,           label: "Mission Stats"   },
+  { to: "/admin/provinces",      icon: <Map size={18} />,             label: "Province Stats"  },
+  { to: "/admin/events/create",  icon: <Calendar size={18} />,        label: "Create Event"    },
+  { to: "/admin/users",          icon: <UserPlus size={18} />,        label: "Admin Management"},
+  { to: "/admin/settings",       icon: <Settings size={18} />,        label: "Settings"        },
+];
 
 export default function Sidebar() {
   const location = useLocation();
+  const { logout, user } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
 
-  const getLinkClass = (path) => {
-    // สไตล์ Pluto: พื้นหลังโปร่ง พอ Active แล้วเป็นสีส้ม
-    const baseClass =
-      "flex items-center gap-3 p-3 text-[15px] font-medium transition-all duration-300 mx-2 rounded-md mb-1";
-    const activeClass = "bg-[#ff5722] text-white shadow-md"; // Active: สีส้ม ตัวหนังสือขาว
-    const inactiveClass = "text-gray-400 hover:bg-white/5 hover:text-white"; // Inactive: เทา
-
-    return location.pathname === path
-      ? `${baseClass} ${activeClass}`
-      : `${baseClass} ${inactiveClass}`;
-  };
+  const isActive = (path) =>
+    path === "/admin/dashboard"
+      ? location.pathname === path
+      : location.pathname.startsWith(path);
 
   return (
-    <aside className="w-72 bg-[#15283c] h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-50 font-sans">
-      {/* --- 1. PROFILE SECTION (หัวบนสุด) --- */}
-      <div className="flex flex-col items-center justify-center py-8 bg-[#15283c] border-b border-white/5">
-        <div className="w-20 h-20 rounded-full border-4 border-white/20 overflow-hidden mb-3 p-1">
-          <img
-            src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80"
-            alt="Admin"
-            className="w-full h-full rounded-full object-cover"
-          />
+    <>
+      {/* Desktop Sidebar */}
+      <aside
+        className={`hidden md:flex flex-col h-screen fixed left-0 top-0 z-50 bg-[#0a0f1a] border-r border-white/5 transition-all duration-300 ${
+          collapsed ? "w-[68px]" : "w-60"
+        }`}
+      >
+        {/* Logo */}
+        <div className={`flex items-center gap-2.5 px-4 py-5 border-b border-white/5 ${collapsed ? 'justify-center px-2' : ''}`}>
+          <div className="relative shrink-0 group/logo">
+            <div className="absolute inset-0 bg-blue-500/30 blur-lg rounded-full opacity-0 group-hover/logo:opacity-100 transition-opacity duration-500" />
+            <img src="/icon.png" alt="BSC Logo" className="relative h-9 w-auto object-contain" />
+          </div>
+          {!collapsed && (
+            <div className="overflow-hidden">
+              <p className="text-white font-bold text-sm leading-tight tracking-wide truncate">ธารพระพร</p>
+              <p className="text-[#00a3ff] text-[10px] uppercase tracking-[0.2em] font-medium">Blessing Stream</p>
+            </div>
+          )}
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`ml-auto p-1 rounded-lg text-slate-600 hover:text-white hover:bg-white/5 transition-colors ${collapsed ? 'hidden' : 'block'}`}
+          >
+            <Menu size={16} />
+          </button>
         </div>
-        <h3 className="text-white text-lg font-bold tracking-wide">
-          Pastor John
-        </h3>
-        <p className="text-gray-400 text-sm">General Administrator</p>
-      </div>
 
-      {/* --- 2. MENU TITLE --- */}
-      <div className="px-6 py-5">
-        <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">
-          General
-        </p>
-      </div>
+        {/* Expand button when collapsed */}
+        {collapsed && (
+          <button onClick={() => setCollapsed(false)} className="flex justify-center py-3 text-slate-600 hover:text-white transition-colors">
+            <ChevronRight size={16} />
+          </button>
+        )}
 
-      {/* --- 3. LINKS --- */}
-      <nav className="flex flex-col flex-1 px-2">
-        <Link
-          to="/admin/dashboard"
-          className={getLinkClass("/admin/dashboard")}
-        >
-          <LayoutDashboard size={20} />
-          <span>Dashboard</span>
-        </Link>
-        <Link to="/admin/church-stats" className={getLinkClass("/admin/church-stats")}>
-          <Users size={20} />
-          <span>Church Stats</span>
-        </Link>
+        {/* Nav Items */}
+        <nav className="flex flex-col flex-1 px-2 py-3 gap-0.5 overflow-y-auto">
+          {!collapsed && (
+            <p className="text-[10px] text-slate-600 font-bold tracking-widest uppercase px-3 mb-2">Navigation</p>
+          )}
+          {navItems.map((item) => {
+            if (item.label === "Admin Management" && user?.role !== 'superadmin') return null;
 
-        <Link to="/admin/update" className={getLinkClass("/update")}>
-          <Users size={20} />
-          <span>Mission Stats</span>
-        </Link>
+            const active = isActive(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
+                  active
+                    ? "bg-[#00a3ff]/15 text-[#00a3ff] border border-[#00a3ff]/20"
+                    : "text-slate-400 hover:text-white hover:bg-white/5"
+                } ${collapsed ? "justify-center px-0" : ""}`}
+                title={collapsed ? item.label : ""}
+              >
+                <span className={active ? "text-[#00a3ff]" : ""}>{item.icon}</span>
+                {!collapsed && <span>{item.label}</span>}
+                {active && !collapsed && (
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00a3ff] shadow-[0_0_6px_#00a3ff]" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
 
-        <Link to="/admin/settings" className={getLinkClass("/settings")}>
-          <Settings size={20} />
-          <span>Settings</span>
-        </Link>
-      </nav>
+        {/* Footer */}
+        <div className={`p-3 border-t border-white/5 ${collapsed ? "flex justify-center" : ""}`}>
+          <button
+            onClick={() => logout()}
+            className={`flex items-center gap-2.5 text-slate-500 hover:text-red-400 transition-colors text-sm font-medium rounded-xl px-3 py-2.5 hover:bg-red-500/5 w-full ${
+              collapsed ? "justify-center px-0" : ""
+            }`}
+          >
+            <LogOut size={16} />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
 
-      {/* --- 4. FOOTER --- */}
-      <div className="p-4 bg-[#102030]">
-        <button className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#ff5722] text-white font-bold rounded-lg hover:bg-[#e64a19] transition-colors shadow-lg">
-          <LogOut size={18} />
-          <span>Logout</span>
+      {/* Mobile Top Bar */}
+      <MobileTopBar navItems={navItems} />
+    </>
+  );
+}
+
+// Mobile sticky top navbar
+function MobileTopBar({ navItems }) {
+  const location = useLocation();
+  const { logout, user } = useAuth();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[#0a0f1a]/95 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-4 h-14">
+        <div className="flex items-center gap-2">
+          <img src="/icon.png" alt="BSC" className="h-8 w-auto object-contain" />
+          <div>
+            <p className="text-white font-bold text-sm leading-tight">ธารพระพร</p>
+            <p className="text-[#00a3ff] text-[9px] uppercase tracking-widest">Blessing Stream</p>
+          </div>
+        </div>
+        <button onClick={() => setOpen(true)} className="p-2 text-slate-400 hover:text-white">
+          <Menu size={22} />
         </button>
       </div>
-    </aside>
+
+      {/* Mobile Drawer */}
+      {open && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-[#0a0f1a] border-r border-white/5 flex flex-col">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
+              <span className="text-white font-black">Menu</span>
+              <button onClick={() => setOpen(false)} className="p-1 text-slate-500 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <nav className="flex flex-col px-3 py-3 gap-1 flex-1">
+              {navItems.map((item) => {
+                if (item.label === "Admin Management" && user?.role !== 'superadmin') return null;
+                const active = location.pathname.startsWith(item.to);
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      active
+                        ? "bg-[#00a3ff]/15 text-[#00a3ff] border border-[#00a3ff]/20"
+                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="p-3 border-t border-white/5">
+              <button
+                onClick={() => logout()}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-colors w-full"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

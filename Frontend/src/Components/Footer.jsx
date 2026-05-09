@@ -37,7 +37,7 @@ const Footer = () => {
           <ul className="space-y-4 text-sm">
             <li className="flex justify-between items-center border-b border-white/10 pb-2">
               <span className="text-blue-400 font-bold">{t('footer.sunday_service')}</span> {/* 🔵 แปลวันอาทิตย์ */}
-              <span>10:00 - 12:00 น.</span>
+              <span>09:00 - 12:00 น.</span>
             </li>
           </ul>
         </div>

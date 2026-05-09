@@ -5,9 +5,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { 
     type: String, 
-    enum: ['user', 'admin'], // บังคับค่า เลือกได้แค่ 2 อย่างนี้
-    default: 'user' 
-  }
+    enum: ['admin', 'superadmin'],
+    default: 'admin' 
+  },
+  mustChangePassword: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('User', userSchema);

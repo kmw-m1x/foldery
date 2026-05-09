@@ -40,7 +40,7 @@ const EventDetail = () => {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/api/events/${id}`);
+        const res = await axios.get(`${import.meta.env.VITE_SERVER_URL}/api/events/${id}`);
         setEvent(res.data);
         setLoading(false);
       } catch (err) {

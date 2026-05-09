@@ -1,46 +1,70 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../utils/axios';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // เก็บข้อมูล user { email, role, token }
+  const [user, setUser]                     = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading]               = useState(true);
   const navigate = useNavigate();
 
-  // 1. โหลดข้อมูลจาก LocalStorage ตอนเปิดเว็บมา (กัน Refresh แล้วหลุด)
+  // Check auth on initial load (session restore via cookie)
   useEffect(() => {
-    const storedUser = localStorage.getItem("mission_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        const userData = res.data.user;
+        setUser(userData);
+        setIsAuthenticated(true);
+
+        // If flagged, redirect to force-change page
+        if (userData.mustChangePassword) {
+          navigate('/admin/change-password', { replace: true });
+        }
+      } catch (error) {
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
 
-  // 2. ฟังก์ชัน Login (รับ Token มาเก็บ)
-  const login = (userData) => {
+  const login = async (email, password) => {
+    const res = await api.post('/auth/login', { email, password });
+    const userData = res.data.user;
     setUser(userData);
-    localStorage.setItem("mission_user", JSON.stringify(userData));
-    
-    // เช็ค Role เพื่อพาไปหน้าแรกที่เหมาะสม
-    if (userData.role === 'admin') {
-      navigate('/');
+    setIsAuthenticated(true);
+
+    // Redirect based on mustChangePassword flag
+    if (userData.mustChangePassword) {
+      navigate('/admin/change-password', { replace: true });
     } else {
-      navigate('/'); // หรือพาไปหน้าอื่นตาม Role
+      navigate('/admin/dashboard');
     }
+    return res.data;
   };
 
-  // 3. ฟังก์ชัน Logout (ล้างทิ้ง)
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("mission_user");
-    navigate('/auth/login');
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('Logout error', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      navigate('/auth/login');
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, isAuthenticated, loading, login, logout, setIsAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook สั้นๆ เอาไว้เรียกใช้ง่ายๆ
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext);

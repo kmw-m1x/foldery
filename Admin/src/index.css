@@ -1,7 +1,48 @@
 @import "tailwindcss";
 
-#root {
-  font-family: "Kanit", sans-serif; 
-  font-style: normal;
-  font-weight: 300;
+/* ─── Design Tokens ─────────────────────────── */
+:root {
+  --bg-base:    #0a0f1a;
+  --bg-surface: #0d1522;
+  --bg-card:    #1b2537;
+  --border:     rgba(255,255,255,0.06);
+  --accent:     #00a3ff;
+  --accent-dim: #0054a5;
+  --text:       #f1f5f9;
+  --text-muted: #64748b;
 }
+
+/* ─── Base ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: var(--bg-surface);
+  color: var(--text);
+  font-family: "Kanit", sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ──────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Selection ─────────────────────────────── */
+::selection { background: rgba(0,163,255,0.25); color: #fff; }
+
+/* ─── Number input — hide spin arrows ──────── */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+/* ─── Animations ─────────────────────────────── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up { animation: fade-in-up 0.4s ease both; }

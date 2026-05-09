@@ -3,26 +3,21 @@
 const express = require('express');
 const router = express.Router();
 
-// เช็ค path ให้ดีนะ ว่าโฟลเดอร์มึงชื่อ Controllers (ตัวใหญ่) หรือ controllers (ตัวเล็ก)
 const missionController = require('../Controllers/missionController'); 
 const statsController = require('../Controllers/statsController');
-
-
-// ✅ เหลือบรรทัดนี้อันเดียวพอ เพราะไฟล์มึงชื่อ uploadMiddleware.js
 const upload = require('../middleware/uploadMiddleware');
 
 // --- Routes ---
 
-// GET ทั้งหมด (Map)
-router.get('/', missionController.getMissions);
-
-// GET สถิติรวม (Dashboard) ** ต้องวางไว้บนสุดในบรรดา GET ID **
-
-
-router.post('/', upload.array('image', 5), missionController.createMission);
-
+// 1. Dashboard & Stats (วางไว้บนสุด)
+router.get('/dashboard/stats', missionController.getDashboardStats);
 router.post('/stats', statsController.addMissionStats);
 
+// 2. Mission CRUD
+router.get('/', missionController.getMissions);
+router.get('/:id', missionController.getMissionById);
+router.post('/', upload.array('image', 5), missionController.createMission);
+router.put('/:id', upload.array('image', 5), missionController.updateMission);
 router.delete('/:id', missionController.deleteMission);
 
 module.exports = router;

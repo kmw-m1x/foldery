@@ -76,7 +76,7 @@ const Navbar = () => {
             2. min-w-[550px] : จองความกว้างขั้นต่ำไว้ 550px (กันกระตุกเวลาเปลี่ยนภาษา)
             3. justify-center : จัดเมนูให้อยู่กลางกล่องที่จองไว้
         */}
-        <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-1 bg-white/5 p-1.5 rounded-full border border-white/10 backdrop-blur-sm z-40 min-w-[550px] justify-center transition-all duration-300">
+        <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 gap-0.5 bg-white/5 p-1 rounded-full border border-white/10 backdrop-blur-sm z-40 justify-center transition-all duration-300">
           {menuItems.map((link) => {
             const isActive = link.to === '/' 
               ? location.pathname === '/' 
@@ -86,7 +86,7 @@ const Navbar = () => {
               <Link 
                 key={link.to}
                 to={link.to} 
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 relative whitespace-nowrap
+                className={`px-3 md:px-4 lg:px-5 py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 relative whitespace-nowrap
                   ${isActive 
                     ? "text-[#0f172a] bg-white shadow-sm font-bold" 
                     : "text-slate-300 hover:text-white hover:bg-white/10"
@@ -121,7 +121,7 @@ const Navbar = () => {
           {/* Mobile Menu Toggle */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+            className="lg:hidden p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-full transition-colors"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -130,7 +130,7 @@ const Navbar = () => {
       </div>
 
       {/* ================= Mobile Menu Dropdown ================= */}
-      <div className={`md:hidden absolute top-full left-0 right-0 bg-[#0f172a] border-b border-white/10 shadow-2xl transition-all duration-300 origin-top overflow-hidden ${
+      <div className={`lg:hidden absolute top-full left-0 right-0 bg-[#0f172a] border-b border-white/10 shadow-2xl transition-all duration-300 origin-top overflow-hidden ${
         isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
         <div className="flex flex-col p-6 space-y-4">

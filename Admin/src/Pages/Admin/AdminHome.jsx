@@ -1,47 +1,64 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { 
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid 
-} from 'recharts';
-import { 
-  Users, BookOpen, Droplets, UserCheck, Home, MapPin, Megaphone, Activity, Clock
-} from 'lucide-react';
+import api from '../../utils/axios';
+import { motion } from 'framer-motion';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { Users, BookOpen, Droplets, Home, MapPin, Megaphone, Activity, Loader2 } from 'lucide-react';
+
+const fade = (i) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.45 } },
+});
+
+const StatCard = ({ title, value, icon: Icon, accent, idx }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0, transition: { delay: idx * 0.06, duration: 0.45 } }}
+    className="relative bg-[#1b2537] border border-white/5 rounded-2xl p-6 overflow-hidden hover:border-white/15 transition-all duration-300 group cursor-default"
+  >
+    {/* Background glow */}
+    <div
+      className="absolute -top-6 -right-6 w-28 h-28 rounded-full opacity-[0.07] group-hover:opacity-[0.15] transition-opacity duration-500"
+      style={{ backgroundColor: accent, filter: 'blur(20px)' }}
+    />
+    <div className="flex items-start justify-between relative z-10">
+      <div>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">{title}</p>
+        <p className="text-4xl font-black text-white leading-none">{(value || 0).toLocaleString()}</p>
+      </div>
+      <div className="p-3 rounded-xl" style={{ backgroundColor: `${accent}20` }}>
+        <Icon size={22} style={{ color: accent }} />
+      </div>
+    </div>
+    {/* Bottom accent bar on hover */}
+    <div
+      className="absolute bottom-0 left-0 h-[3px] w-0 group-hover:w-full transition-all duration-500 rounded-b-2xl"
+      style={{ backgroundColor: accent }}
+    />
+  </motion.div>
+);
 
 export default function AdminHome() {
-  // State เก็บข้อมูลสถิติ
   const [stats, setStats] = useState({
-    hearers: 0,
-    targetAreas: 0,
-    decisions: 0,
-    baptized: 0,
-    disciples: 0,
-    houseChurches: 0
+    hearers: 0, targetAreas: 0, decisions: 0,
+    baptized: 0, disciples: 0, houseChurches: 0
   });
-  
   const [loading, setLoading] = useState(true);
 
-  // --- 1. LOGIC การดึงข้อมูล ---
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/stats/all");
-        
-        // ดึงข้อมูลมา
-        const dataFromApi = res.data[0]?.stats || {};
-
-        // ⚠️ จุดแก้: Merge ข้อมูลจาก API เข้ากับ Default 0
-        // เพื่อกันไม่ให้ค่าไหนเป็น undefined ถ้า Backend ไม่ส่งมา
+        const res = await api.get('/stats/all');
+        const d = res.data[0]?.stats || {};
         setStats({
-          hearers: dataFromApi.hearers || 0,
-          targetAreas: dataFromApi.targetAreas || 0,
-          decisions: dataFromApi.decisions || 0,
-          baptized: dataFromApi.baptized || 0,
-          disciples: dataFromApi.disciples || 0,
-          houseChurches: dataFromApi.houseChurches || 0
+          hearers:       d.hearers       || 0,
+          targetAreas:   d.targetAreas   || 0,
+          decisions:     d.decisions     || 0,
+          baptized:      d.baptized      || 0,
+          disciples:     d.disciples     || 0,
+          houseChurches: d.houseChurches || 0,
         });
-
-      } catch (error) {
-        console.error("ดึงข้อมูลไม่มา:", error);
+      } catch (e) {
+        console.error('Failed to fetch stats:', e);
       } finally {
         setLoading(false);
       }
@@ -49,116 +66,114 @@ export default function AdminHome() {
     fetchData();
   }, []);
 
-  // ข้อมูลกราฟจำลอง
   const chartData = [
-    { name: 'Jan', uv: 2000 },
-    { name: 'Feb', uv: 3000 },
-    { name: 'Mar', uv: 2500 },
-    { name: 'Apr', uv: 4000 },
-    { name: 'May', uv: 3500 },
-    { name: 'Jun', uv: 4500 },
-    { name: 'Jul', uv: 5000 },
+    { name: 'ม.ค.', hearers: 1200, decisions: 80  },
+    { name: 'ก.พ.', hearers: 1900, decisions: 110 },
+    { name: 'มี.ค.', hearers: 1600, decisions: 95  },
+    { name: 'เม.ย.', hearers: 2400, decisions: 160 },
+    { name: 'พ.ค.', hearers: 2200, decisions: 140 },
+    { name: 'มิ.ย.', hearers: 2800, decisions: 190 },
+    { name: 'ก.ค.', hearers: 3200, decisions: 220 },
   ];
 
-  // --- 2. CONFIG การ์ด 6 ใบ ---
   const statCards = [
-    { title: 'ผู้ได้ยิน (Hearers)', value: stats.hearers, icon: Megaphone, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { title: 'พื้นที่เป้าหมาย (Target Areas)', value: stats.targetAreas, icon: MapPin, color: 'text-red-500', bg: 'bg-red-50' },
-    { title: 'ตัดสินใจเชื่อ (Decisions)', value: stats.decisions, icon: BookOpen, color: 'text-pink-600', bg: 'bg-pink-50' },
-    { title: 'รับบัพติสมา (Baptized)', value: stats.baptized, icon: Droplets, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-    { title: 'สร้างสาวก (Disciples)', value: stats.disciples, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { title: 'คริสตจักรบ้าน (House Churches)', value: stats.houseChurches, icon: Home, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { title: 'Hearers',       value: stats.hearers,       icon: Megaphone, accent: '#00a3ff' },
+    { title: 'Target Areas',  value: stats.targetAreas,   icon: MapPin,    accent: '#f472b6' },
+    { title: 'Decisions',     value: stats.decisions,     icon: BookOpen,  accent: '#a78bfa' },
+    { title: 'Baptized',      value: stats.baptized,      icon: Droplets,  accent: '#22d3ee' },
+    { title: 'Disciples',     value: stats.disciples,     icon: Users,     accent: '#34d399' },
+    { title: 'House Churches',value: stats.houseChurches, icon: Home,      accent: '#fb923c' },
   ];
 
   if (loading) {
     return (
-      <div className="flex h-[80vh] w-full justify-center items-center text-gray-400">
-        <Activity className="animate-spin mr-2" /> กำลังโหลดข้อมูล...
+      <div className="flex h-[70vh] items-center justify-center">
+        <Loader2 className="animate-spin text-[#00a3ff]" size={36} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
-      
-      {/* Header */}
-      <div className="flex justify-between items-end border-b border-gray-200 pb-4">
+    <div className="space-y-8 px-1">
+
+      {/* ─── Header ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+        className="flex flex-col sm:flex-row sm:items-end justify-between gap-3"
+      >
         <div>
-          <h1 className="text-3xl font-black text-[#15283c]">Dashboard Overview</h1>
-          <p className="text-gray-400 mt-1 text-sm">ภาพรวมสถิติพันธกิจทั้งหมด (Real-time)</p>
+          <p className="text-[#00a3ff] text-[10px] font-black tracking-[0.3em] uppercase mb-1">Overview</p>
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Mission Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-1 font-light">ภาพรวมสถิติพันธกิจทั้งหมด — อัปเดตแบบ Real-time</p>
         </div>
-        <div className="text-xs font-bold bg-white border border-gray-200 px-3 py-1 rounded-full text-gray-500 shadow-sm flex items-center gap-1">
-          <Clock size={12} /> Live Data
+        <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-full self-start sm:self-auto">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          LIVE
         </div>
+      </motion.div>
+
+      {/* ─── Stat Cards ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+        {statCards.map((c, i) => <StatCard key={c.title} {...c} idx={i} />)}
       </div>
 
-      {/* --- STATS CARDS GRID --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-        {statCards.map((item, index) => (
-          <div 
-            key={index} 
-            className="bg-white p-6 rounded-xl shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07)] hover:shadow-lg transition-all duration-300 relative overflow-hidden group border border-transparent hover:border-gray-100"
-          >
-            <div className="flex justify-between items-start z-10 relative">
-              <div>
-                <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2">{item.title}</h3>
-                <span className="text-4xl font-black text-slate-700 group-hover:text-[#15283c] transition-colors">
-                  {/* ✅ แก้ตรงนี้: ใส่ ( || 0 ) กันไว้ ถ้า value เป็น undefined ให้ใช้ 0 */}
-                  {(item.value || 0).toLocaleString()}
-                </span>
-              </div>
-              <div className={`p-3 rounded-xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform shadow-sm`}>
-                <item.icon size={24} />
-              </div>
-            </div>
-            
-            {/* เส้นสีตกแต่งด้านล่าง */}
-            <div className={`absolute bottom-0 left-0 h-1.5 w-full ${item.color.replace('text', 'bg')} opacity-80`} />
-          </div>
-        ))}
-      </div>
-
-      {/* --- CHART SECTION --- */}
-      <div className="bg-white p-8 rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-50">
-        <div className="flex justify-between items-center mb-8">
+      {/* ─── Chart ─── */}
+      <motion.div
+        {...fade(7)}
+        className="bg-[#1b2537] border border-white/5 rounded-2xl p-6 md:p-8"
+      >
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-lg font-bold text-[#15283c] flex items-center gap-2">
-              <Activity size={18} className="text-blue-500" /> Growth Trend
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Analytics</p>
+            <h3 className="text-lg font-black text-white flex items-center gap-2">
+              <Activity size={18} className="text-[#00a3ff]" />
+              Growth Trend
             </h3>
-            <p className="text-sm text-gray-400">อัตราการเติบโตของพันธกิจ (จำลอง)</p>
+          </div>
+          <div className="hidden sm:flex items-center gap-4 text-xs font-bold text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-[3px] bg-[#00a3ff] rounded-full inline-block" />
+              Hearers
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-[3px] bg-[#a78bfa] rounded-full inline-block" />
+              Decisions
+            </span>
           </div>
         </div>
-        
-        <div className="h-[400px] w-full">
+
+        <div className="h-64 md:h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <linearGradient id="gHearers" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#00a3ff" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#00a3ff" stopOpacity={0}   />
+                </linearGradient>
+                <linearGradient id="gDecisions" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#a78bfa" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#a78bfa" stopOpacity={0}   />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12, dy: 10}} />
-              <YAxis axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} />
-              <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
-                cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '4 4' }}
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#475569', fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{
+                  background: '#0d1522',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: '12px',
+                  color: '#fff',
+                  fontSize: 12,
+                }}
+                cursor={{ stroke: 'rgba(255,255,255,0.05)', strokeWidth: 40 }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="uv" 
-                stroke="#3b82f6" 
-                strokeWidth={3} 
-                fillOpacity={1} 
-                fill="url(#colorUv)" 
-                activeDot={{ r: 6, strokeWidth: 0, fill: '#15283c' }}
-              />
+              <Area type="monotone" dataKey="hearers"   stroke="#00a3ff" strokeWidth={2.5} fillOpacity={1} fill="url(#gHearers)"   dot={false} activeDot={{ r: 5, strokeWidth: 0, fill: '#00a3ff' }} />
+              <Area type="monotone" dataKey="decisions" stroke="#a78bfa" strokeWidth={2.5} fillOpacity={1} fill="url(#gDecisions)" dot={false} activeDot={{ r: 5, strokeWidth: 0, fill: '#a78bfa' }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
-
+      </motion.div>
     </div>
   );
 }

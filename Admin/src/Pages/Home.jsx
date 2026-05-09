@@ -1,98 +1,193 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../utils/axios';
+import {
+  LayoutDashboard, Users, Map, Calendar,
+  ArrowRight, Megaphone, Heart, Droplets,
+  Loader2, Tag, Clock, MapPin, AlertCircle
+} from 'lucide-react';
+
+const STATS_API = '/stats/all';
+const EVENTS_API = '/events';
+
+// Quick nav cards
+const quickNav = [
+  { to: '/admin/dashboard',    icon: <LayoutDashboard size={22} />, label: 'Dashboard',      desc: 'ภาพรวมสถิติทั้งหมด',      color: 'from-blue-500/20 to-blue-600/5',    accent: '#00a3ff' },
+  { to: '/admin/church-stats', icon: <Users size={22} />,           label: 'Church Stats',   desc: 'สถิติรายคริสตจักร',        color: 'from-violet-500/20 to-violet-600/5', accent: '#a78bfa' },
+  { to: '/admin/provinces',    icon: <Map size={22} />,             label: 'Province Stats', desc: 'จัดการข้อมูลรายจังหวัด',   color: 'from-cyan-500/20 to-cyan-600/5',    accent: '#22d3ee' },
+  { to: '/events',             icon: <Calendar size={22} />,        label: 'Events',         desc: 'จัดการกิจกรรมทั้งหมด',      color: 'from-pink-500/20 to-pink-600/5',    accent: '#f472b6' },
+];
+
+const fade = { hidden: { opacity: 0, y: 18 }, visible: (i) => ({ opacity: 1, y: 0, transition: { delay: i * 0.07, duration: 0.5 } }) };
+
+const formatDate = (d) => {
+  if (!d) return 'TBA';
+  return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const categoryColor = {
+  Community: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/20' },
+  Camp:      { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/20'    },
+  Service:   { bg: 'bg-violet-500/15',  text: 'text-violet-400',  border: 'border-violet-500/20'  },
+  Worship:   { bg: 'bg-pink-500/15',    text: 'text-pink-400',    border: 'border-pink-500/20'    },
+  Workshop:  { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/20'   },
+};
 
 const Home = () => {
-  return (
-    <div>
-      {/* === 1. Hero Section (ภาพเปิดหัว) === */}
-      {/* ใช้ relative เพื่อเอารูปมาซ้อน แล้วเอา text ทับ */}
-      <section className="relative bg-[#33691e] text-white py-24 lg:py-32 overflow-hidden rounded-3xl shadow-xl mb-12">
-        {/* Background Image Overlay */}
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1438032005730-c779502df39b?q=80&w=2071&auto=format&fit=crop" 
-            alt="Worship Background"
-            className="w-full h-full object-cover opacity-30" // ปรับ opacity ให้รูปจางลง ตัวหนังสือจะได้เด่น
-          />
-        </div>
+  const [statsData, setStatsData] = useState({
+    hearers: 0,
+    decisions: 0,
+    baptized: 0,
+    disciples: 0
+  });
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-        {/* Content */}
-        <div className="relative z-10 container mx-auto px-6 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
-            ยินดีต้อนรับสู่ <span className="text-[#ffc857]">Mission Family</span>
-          </h1>
-          <p className="text-lg md:text-xl mb-10 max-w-2xl mx-auto text-gray-200">
-            ที่ซึ่งความเชื่อ ความหวัง และความรัก เติบโตไปด้วยกัน เราพร้อมเดินเคียงข้างคุณในทุกช่วงเวลาของชีวิต
-          </p>
-          {/* ปุ่ม CTA (Call to Action) เน้นสีทอง */}
-          <Link
-            to="/events"
-            className="inline-block bg-[#ffc857] text-[#33691e] font-bold px-8 py-4 rounded-full hover:bg-[#e0b04b] transition transform hover:scale-105 shadow-lg"
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [statsRes, eventsRes] = await Promise.all([
+          api.get(STATS_API),
+          api.get(EVENTS_API)
+        ]);
+        
+        if (statsRes.data && statsRes.data.length > 0) {
+          setStatsData(statsRes.data[0].stats);
+        }
+        
+        // เอาเฉพาะกิจกรรม 3 อันล่าสุด
+        setEvents((eventsRes.data || []).slice(0, 3));
+      } catch (err) {
+        console.error("Failed to fetch data on home:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const statBoxes = [
+    { icon: <Megaphone size={18} />, label: 'ผู้ได้ยิน',      value: statsData.hearers,   color: '#00a3ff' },
+    { icon: <Heart size={18} />,     label: 'ตัดสินใจเชื่อ',  value: statsData.decisions, color: '#f472b6' },
+    { icon: <Droplets size={18} />,  label: 'บัพติศมา',       value: statsData.baptized,  color: '#22d3ee' },
+    { icon: <Users size={18} />,     label: 'สมาชิก',         value: statsData.disciples, color: '#a78bfa' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#0d1522] font-['Kanit'] px-5 py-8 md:px-10 md:py-10">
+
+      {/* ─── HEADER ───────────────────────────────── */}
+      <motion.div initial="hidden" animate="visible" custom={0} variants={fade}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10"
+      >
+        <div>
+          <p className="text-[#00a3ff] text-[10px] font-black tracking-[0.3em] uppercase mb-1">Admin Portal</p>
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">ยินดีต้อนรับกลับมา 👋</h1>
+          <p className="text-slate-400 text-sm mt-1 font-light">คุณสามารถจัดการข้อมูลทั้งหมดได้จากที่นี่</p>
+        </div>
+      </motion.div>
+
+      {/* ─── STATS ROW ────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+        {statBoxes.map((s, i) => (
+          <motion.div key={s.label} initial="hidden" animate="visible" custom={i + 1} variants={fade}
+            className="bg-[#1b2537] border border-white/5 rounded-2xl p-5 hover:border-white/10 hover:-translate-y-1 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
-            ดูกิจกรรมที่กำลังจะมาถึง
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors" style={{ backgroundColor: s.color + '22', color: s.color }}>
+                {s.icon}
+              </div>
+              <span className="text-slate-400 text-sm font-medium tracking-wide">{s.label}</span>
+            </div>
+            {loading ? (
+              <div className="h-8 w-24 bg-white/5 rounded animate-pulse" />
+            ) : (
+              <p className="text-3xl font-black text-white">{s.value?.toLocaleString() || 0}</p>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ─── QUICK NAV ────────────────────────────── */}
+      <motion.div initial="hidden" animate="visible" custom={2} variants={fade} className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">เมนูลัด (Quick Access)</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickNav.map((item, i) => (
+            <motion.div key={item.to} initial="hidden" animate="visible" custom={i + 3} variants={fade}>
+              <Link to={item.to}
+                className={`group flex flex-col gap-3 bg-gradient-to-br ${item.color} border border-white/5 rounded-2xl p-5 hover:border-white/15 transition-all duration-300 hover:-translate-y-1 shadow-lg`}
+              >
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-inner"
+                  style={{ backgroundColor: item.accent + '22', color: item.accent }}>
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-white font-bold text-base mb-1">{item.label}</p>
+                  <p className="text-slate-400 text-xs font-light">{item.desc}</p>
+                </div>
+                <div className="mt-auto pt-2">
+                  <ArrowRight size={18} className="text-slate-500 group-hover:text-white group-hover:translate-x-1.5 transition-all" />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* ─── RECENT EVENTS ─────────────────────────────── */}
+      <motion.div initial="hidden" animate="visible" custom={8} variants={fade} className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-slate-500 text-xs font-bold tracking-widest uppercase">กิจกรรมล่าสุด (Recent Events)</p>
+          <Link to="/events" className="text-[#00a3ff] text-xs font-bold hover:underline flex items-center gap-1">
+            ดูทั้งหมด <ArrowRight size={12} />
           </Link>
         </div>
-      </section>
 
-      {/* === 2. Welcome Message (ข้อความต้อนรับสั้นๆ) === */}
-      <section className="text-center py-12 px-6 mb-12">
-        <h2 className="text-3xl font-bold text-[#33691e] mb-6">มากกว่าสถานที่ คือผู้คน</h2>
-        <p className="text-gray-700 max-w-3xl mx-auto leading-relaxed text-lg">
-          เราเชื่อว่าทุกคนมีคุณค่าและมีจุดมุ่งหมาย ไม่ว่าคุณจะมาจากไหน หรือกำลังเผชิญกับอะไร 
-          ที่นี่มีที่ว่างสำหรับคุณเสมอ มาร่วมเป็นส่วนหนึ่งของชุมชนที่อบอุ่นและสนับสนุนซึ่งกันและกัน
-        </p>
-      </section>
-
-      {/* === 3. Highlights/Features (การ์ด 3 ใบ) === */}
-      <section className="py-12 mb-12">
-        <h2 className="text-3xl font-bold text-center text-[#33691e] mb-12">สิ่งที่คุณจะพบที่นี่</h2>
-        
-        <div className="grid md:grid-cols-3 gap-8 px-4">
-          {/* Card 1: Community */}
-          <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition border-b-8 border-[#ffc857] text-center group">
-            <div className="bg-[#ece4d4] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-[#ffc857] transition">
-               <span className="text-4xl">🤝</span> {/* ใช้อีโมจิแทนไอคอนไปก่อน */}
-            </div>
-            <h3 className="text-2xl font-bold text-[#33691e] mb-4">สังคมที่อบอุ่น</h3>
-            <p className="text-gray-600">
-              พบเพื่อนใหม่และสร้างความสัมพันธ์ที่มีความหมาย ในบรรยากาศที่เป็นกันเองเหมือนครอบครัว
-            </p>
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={24} className="animate-spin text-[#00a3ff]" />
           </div>
-
-          {/* Card 2: Growth */}
-          <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition border-b-8 border-[#33691e] text-center group">
-             <div className="bg-[#ece4d4] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-[#33691e] transition">
-               <span className="text-4xl">🌱</span>
-            </div>
-            <h3 className="text-2xl font-bold text-[#33691e] mb-4">การเติบโตฝ่ายวิญญาณ</h3>
-            <p className="text-gray-600">
-              เรียนรู้และเติบโตในความเชื่อผ่านคำสอน กิจกรรมกลุ่มย่อย และการแบ่งปันประสบการณ์
-            </p>
+        ) : events.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {events.map(event => {
+              const colors = categoryColor[event.category] ?? categoryColor.Worship;
+              return (
+                <div key={event._id} className="group bg-[#1b2537] border border-white/5 rounded-2xl p-4 flex gap-4 hover:border-white/15 transition-all duration-300">
+                  <div className="w-20 h-20 shrink-0 rounded-xl overflow-hidden relative">
+                    {event.image ? (
+                      <img src={event.image} alt={event.title} className="w-full h-full object-cover brightness-75 group-hover:scale-110 transition-transform duration-500" />
+                    ) : (
+                      <div className="w-full h-full bg-slate-800 flex items-center justify-center"><Calendar size={20} className="opacity-30" /></div>
+                    )}
+                  </div>
+                  <div className="flex flex-col flex-1 justify-center">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${colors.bg} ${colors.text}`}>{event.category}</span>
+                      <span className="text-slate-500 text-[10px] flex items-center gap-1"><Calendar size={10}/> {formatDate(event.startDate)}</span>
+                    </div>
+                    <h3 className="font-bold text-white text-sm line-clamp-1 mb-1 group-hover:text-[#00a3ff] transition-colors">{event.title}</h3>
+                    <div className="text-slate-400 text-xs flex items-center gap-1 line-clamp-1">
+                      <MapPin size={10} className="shrink-0" /> <span className="truncate">{event.location}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-
-          {/* Card 3: Impact */}
-          <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition border-b-8 border-[#ffc857] text-center group">
-             <div className="bg-[#ece4d4] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-[#ffc857] transition">
-               <span className="text-4xl">💖</span>
-            </div>
-            <h3 className="text-2xl font-bold text-[#33691e] mb-4">ส่งต่อความรัก</h3>
-            <p className="text-gray-600">
-              ร่วมมือกันสร้างผลกระทบเชิงบวกให้กับชุมชนและสังคม ผ่านกิจกรรมจิตอาสาและการช่วยเหลือ
-            </p>
+        ) : (
+          <div className="bg-[#1b2537] border border-white/5 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+            <AlertCircle size={32} className="text-slate-600 mb-3" />
+            <p className="text-slate-400 text-sm font-medium">ยังไม่มีกิจกรรมในระบบ</p>
+            <Link to="/admin/events/create" className="text-[#00a3ff] text-xs mt-2 hover:underline">
+              + สร้างกิจกรรมแรก
+            </Link>
           </div>
-        </div>
-      </section>
+        )}
+      </motion.div>
 
-      {/* === 4. Final CTA Section (แถบปิดท้าย) === */}
-      <section className="bg-[#33691e] text-white p-12 rounded-3xl text-center shadow-inner">
-        <h2 className="text-3xl font-bold mb-6">พร้อมที่จะเริ่มต้นการเดินทางใหม่หรือยัง?</h2>
-        <p className="mb-8 text-gray-200">มาร่วมร่วมนมัสการกับเราได้ทุกวันอาทิตย์ หรือติดต่อเราเพื่อสอบถามข้อมูลเพิ่มเติม</p>
-        <div className="space-x-4">
-             <button className="bg-transparent border-2 border-[#ffc857] text-[#ffc857] font-bold px-8 py-3 rounded-full hover:bg-[#ffc857] hover:text-[#33691e] transition">
-                ติดต่อเรา
-             </button>
-        </div>
-      </section>
     </div>
   );
 };

@@ -36,7 +36,7 @@ const Contact = () => {
 
     try {
       // ⚠️ เปลี่ยน URL ให้ตรงกับ Backend 
-      await axios.post("http://localhost:3000/api/contact", formData);
+      await axios.post(`${import.meta.env.VITE_SERVER_URL}/api/contact`, formData);
       
       setFormStatus("success");
       // เคลียร์ฟอร์มหลังส่งเสร็จ

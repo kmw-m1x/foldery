@@ -8,9 +8,14 @@ import Contact from "./Page/Contact";
 import Events from "./Page/Event";
 import EventDetail from "./Page/EventDetail";
 import MissionDetail from "./Page/MissionDetail";
+import ProvinceManager from "./admin/ProvinceManager";
 function App() {
   return (
     <Routes>
+      {/* Admin — standalone, no Navbar/Footer */}
+      <Route path="/admin" element={<ProvinceManager />} />
+
+      {/* Main site */}
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />

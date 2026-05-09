@@ -1,192 +1,250 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom'; // ✅ 1. เพิ่ม import นี้
-import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react'; 
+import { motion } from 'framer-motion';
+import { Users, Target, Heart, Waves, Home, UserCheck, Loader2 } from 'lucide-react';
+import ThailandMapDashboard from '../Components/ThailandMapDashboard';
+import MissionCard from '../Components/MissionCard';
+import { useNavigate } from 'react-router-dom';
 
-import MissionMap from '../Components/MissionMap';
-import MissionCard from '../Components/MissionCard'; 
-import MissionStats from '../Components/MissionStats'; 
-
-// --- 🏛️ Blog Layout Styles ---
-const styles = {
-  container: "min-h-screen bg-[#FAFAFA] text-[#1d1d1f] font-sans pb-20",
-  mainWrapper: "max-w-6xl mx-auto px-4 lg:px-0 py-8 grid grid-cols-1 lg:grid-cols-12 gap-10",
-  leftContent: "lg:col-span-8 flex flex-col gap-8",
-  sidebar: "lg:col-span-4 flex flex-col gap-6 lg:sticky lg:top-8 h-fit",
-};
+const StatCard = ({ title, value, icon: Icon, color, delay, isActive, onClick }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    onClick={onClick}
+    className={`bg-white rounded-2xl shadow-sm border p-5 flex items-center gap-4 transition-all cursor-pointer ${
+      isActive 
+        ? `${color.replace('text-', 'border-')} scale-[1.03] shadow-md ring-1 ${color.replace('text-', 'ring-')}` 
+        : 'border-slate-100 hover:shadow-md'
+    }`}
+  >
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} bg-opacity-10 ${color.replace('text-', 'bg-')}`}>
+      <Icon size={24} className={color} />
+    </div>
+    <div>
+      <p className={`text-xs font-medium uppercase tracking-wider ${isActive ? color : 'text-slate-500'}`}>{title}</p>
+      <h3 className="text-2xl font-black text-slate-800 mt-0.5">
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </h3>
+    </div>
+  </motion.div>
+);
 
 const MissionDashboard = () => {
-  const navigate = useNavigate(); // ✅ 2. เรียกใช้ Hook สำหรับเปลี่ยนหน้า
+  const [stats, setStats] = useState(null);
   const [missions, setMissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mapState, setMapState] = useState({ center: [13.7563, 100.5018], zoom: 5 });
-
-  // --- 🧠 Pagination State ---
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    return new Date(dateString).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
-  };
+  const [activeTab, setActiveTab] = useState('hearers');
+  const [selectedYear, setSelectedYear] = useState(2026);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchMissions = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:3000/api/missions');
-        const formattedData = response.data.map((item) => ({
-            id: item._id,            
-            title: item.mission,     
-            thumbnail: item.image || `https://source.unsplash.com/random/800x600/?church,people&sig=${item._id}`, 
-            time: formatDate(item.missionDate || item.createdAt), 
-            assignee: {
-                name: item.user || "ผู้ประกาศ",    
-                avatar: `https://ui-avatars.com/api/?name=${item.user || "User"}&background=random` 
-            },
-            location: { 
-                lat: parseFloat(item.lat), 
-                lng: parseFloat(item.lng), 
-                name: item.locationName || "ไม่ระบุพิกัด" 
-            },
-            stats: {
-                received: item.receivedCount || 0, 
-                baptized: item.baptizedCount || 0
-            }
-        }));
-        setMissions(formattedData);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setLoading(false);
-      }
+const fetchData = async () => {
+  try {
+    const [statsRes, missionsRes] = await Promise.all([
+      axios.get(`${import.meta.env.VITE_SERVER_URL}/api/stats/all`),
+
+    ]);
+
+ 
+    const statsData = statsRes.data[0]?.stats || {
+      hearers: 0,
+      decisions: 0,
+      baptized: 0,
+      disciples: 0,
+      houseChurches: 0,
+      targetAreas: 0
     };
-    fetchMissions();
+    
+    setStats(statsData); 
+    setMissions(missionsRes.data);
+  } catch (error) {
+
+  } finally {
+    setLoading(false);
+  }
+};
+    fetchData();
   }, []);
 
-  const totalStats = useMemo(() => {
-    return missions.reduce((acc, curr) => ({
-        received: acc.received + (curr.stats?.received || 0),
-        baptized: acc.baptized + (curr.stats?.baptized || 0)
-    }), { received: 0, baptized: 0 });
-  }, [missions]);
-
-  // Pagination Logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentMissions = missions.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(missions.length / itemsPerPage);
-
-  const paginate = (pageNumber) => {
-    setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // กดเปลี่ยนหน้าแล้วเด้งขึ้นบนให้ด้วย
-  };
-
-  // ✅ 3. ฟังก์ชันกดการ์ดแล้วไปหน้า Detail
-  const handleCardClick = (id) => {
-    navigate(`/mission/${id}`); // เปลี่ยน URL ไปหน้า mission detail
-  };
-
   return (
-    <div className={styles.container}>
-      
-      <main className={styles.mainWrapper}>
-         
-         {/* === LEFT COLUMN: Blog Feed === */}
-         <section className={styles.leftContent}>
+    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 font-['Kanit']">
+      <header className="mb-10 max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-2 h-8 bg-[#00a3ff] rounded-full" />
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+              Thailand Mission Overview
+            </h1>
+          </div>
+          <p className="text-slate-500 text-lg font-light ml-5">
+            สรุปข้อมูลสถิติพันธกิจคริสตจักรและการช่วยเหลือทั่วประเทศไทย
+          </p>
+        </motion.div>
+      </header>
+
+      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Stats Cards */}
+        <div className="lg:col-span-1 space-y-4">
+          {loading ? (
+            <div className="h-full flex items-center justify-center py-20">
+              <Loader2 className="animate-spin text-[#00a3ff]" size={40} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+              <StatCard 
+                title="Hearers (ผู้รับฟัง)" 
+                value={stats?.hearers} 
+                icon={Users} 
+                color="text-blue-500" 
+                delay={0.1}
+                isActive={activeTab === 'hearers'}
+                onClick={() => setActiveTab('hearers')}
+              />
+              <StatCard 
+                title="Decisions (ผู้ตัดสินใจ)" 
+                value={stats?.decisions} 
+                icon={Heart} 
+                color="text-rose-500" 
+                delay={0.2}
+                isActive={activeTab === 'decisions'}
+                onClick={() => setActiveTab('decisions')}
+              />
+              <StatCard 
+                title="Baptized (รับบัพติศมา)" 
+                value={stats?.baptized} 
+                icon={Waves} 
+                color="text-cyan-500" 
+                delay={0.3}
+                isActive={activeTab === 'baptized'}
+                onClick={() => setActiveTab('baptized')}
+              />
+              <StatCard 
+                title="Disciples (สาวก)" 
+                value={stats?.disciples} 
+                icon={UserCheck} 
+                color="text-emerald-500" 
+                delay={0.4}
+                isActive={activeTab === 'disciples'}
+                onClick={() => setActiveTab('disciples')}
+              />
+              <StatCard 
+                title="House Churches (คริสตจักรบ้าน)" 
+                value={stats?.houseChurches} 
+                icon={Home} 
+                color="text-indigo-500" 
+                delay={0.5}
+                isActive={activeTab === 'houseChurches'}
+                onClick={() => setActiveTab('houseChurches')}
+              />
+              <StatCard 
+                title="Target Areas (พื้นที่เป้าหมาย)" 
+                value={stats?.targetAreas} 
+                icon={Target} 
+                color="text-amber-500" 
+                delay={0.6}
+                isActive={activeTab === 'targetAreas'}
+                onClick={() => setActiveTab('targetAreas')}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Map Visualization */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="lg:col-span-2 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 p-4 md:p-8 flex flex-col relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+             <Target size={300} />
+          </div>
+          
+          <div className="flex justify-between items-center mb-6 relative z-10">
+            <div>
+              <h2 className="text-xl font-black text-slate-800">แผนที่สถิติรายจังหวัด</h2>
+              <p className="text-slate-400 text-sm">Interactive map showing mission progress</p>
+            </div>
             
-            {/* Title Section */}
-            <div className="border-b border-neutral-200 pb-4 mb-2 flex items-center justify-between">
-               <h2 className="text-2xl font-bold text-[#1d1d1f] flex items-center gap-2">
-                  <Bookmark className="text-[#0071e3]" size={24} />
-                  อัปเดตล่าสุด
-               </h2>
-               <span className="text-sm text-neutral-500 bg-white border border-neutral-200 px-3 py-1 rounded-full shadow-sm">
-                  {missions.length} รายการ (หน้า {currentPage}/{totalPages || 1})
-               </span>
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+              {[2024, 2025, 2026].map(year => (
+                <button
+                  key={year}
+                  onClick={() => setSelectedYear(year)}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                    selectedYear === year 
+                      ? 'bg-white text-slate-800 shadow-sm' 
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
             </div>
+          </div>
+          
+          <div className="w-full flex-1 min-h-[500px] relative z-10">
+            <ThailandMapDashboard activeCategory={activeTab} selectedYear={selectedYear} />
+          </div>
 
-            {/* Content List */}
-            {loading ? (
-                <div className="py-20 text-center text-neutral-400">กำลังโหลดข้อมูล...</div>
-            ) : (
-                <div className="flex flex-col gap-6 min-h-[500px]">
-                   {currentMissions.length > 0 ? (
-                       currentMissions.map((mission, idx) => (
-                          <MissionCard 
-                            key={mission.id} 
-                            mission={mission} 
-                            index={idx}
-                            onClick={() => handleCardClick(mission.id)} // ✅ 4. ส่งคำสั่ง onClick ให้การ์ด
-                          />
-                       ))
-                   ) : (
-                       <div className="text-center py-10 text-neutral-400">ไม่พบข้อมูล</div>
-                   )}
-                </div>
-            )}
-            
-            {/* Pagination */}
-            {!loading && totalPages > 1 && (
-                <div className="flex flex-wrap items-center justify-center mt-12 gap-2">
-                   <button 
-                      onClick={() => paginate(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`h-10 w-10 flex items-center justify-center rounded-full border border-neutral-200 transition-colors
-                        ${currentPage === 1 ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed' : 'bg-white text-neutral-600 hover:bg-neutral-50 hover:text-[#0071e3]'}
-                      `}
-                   >
-                      <ChevronLeft size={20} />
-                   </button>
-
-                   {[...Array(totalPages)].map((_, i) => (
-                      <button 
-                        key={i + 1}
-                        onClick={() => paginate(i + 1)}
-                        className={`h-10 w-10 flex items-center justify-center rounded-full font-bold transition-all
-                           ${currentPage === i + 1 
-                              ? 'bg-[#0071e3] text-white shadow-[0_4px_12px_rgba(0,113,227,0.3)] scale-110' 
-                              : 'bg-white border border-neutral-200 text-neutral-600 hover:border-[#0071e3] hover:text-[#0071e3]'}
-                        `}
-                      >
-                         {i + 1}
-                      </button>
-                   ))}
-
-                   <button 
-                      onClick={() => paginate(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`h-10 w-10 flex items-center justify-center rounded-full border border-neutral-200 transition-colors
-                        ${currentPage === totalPages ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed' : 'bg-white text-neutral-600 hover:bg-neutral-50 hover:text-[#0071e3]'}
-                      `}
-                   >
-                      <ChevronRight size={20} />
-                   </button>
-                </div>
-            )}
-         </section>
-
-         {/* === RIGHT COLUMN: Sidebar === */}
-         <aside className={styles.sidebar}>
-            <div className="bg-white p-6 rounded-[24px] shadow-sm border border-neutral-100">
-               <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">ภาพรวมพันธกิจ</h3>
-               <MissionStats received={totalStats.received} baptized={totalStats.baptized} />
+          <div className="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center gap-3 relative z-10">
+            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-amber-500">
+               <Target size={20} />
             </div>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              <span className="font-bold text-slate-800">Tip:</span> คุณสามารถนำเมาส์ไปชี้ที่จังหวัดต่างๆ เพื่อดูรายละเอียดจำนวนผู้รับการช่วยเหลือในแต่ละพื้นที่ได้ทันที
+            </p>
+          </div>
+        </motion.div>
+      </div>
 
-            <div className="bg-white p-1 rounded-[24px] shadow-sm border border-neutral-100 overflow-hidden">
-               <div className="h-[250px] w-full rounded-[20px] overflow-hidden relative">
-                  <MissionMap missions={missions} mapState={mapState} />
-                  <div className="absolute bottom-3 left-3 right-3">
-                     <button className="w-full bg-white/90 backdrop-blur text-[#1d1d1f] text-xs font-bold py-2 rounded-lg shadow-lg hover:scale-[1.02] transition-transform">
-                        เปิดแผนที่เต็ม
-                     </button>
-                  </div>
-               </div>
-            </div>
-         </aside>
+      {/* Missions List Section */}
+      <div className="max-w-7xl mx-auto mt-16">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-1.5 h-6 bg-[#00a3ff] rounded-full" />
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+            รายการพันธกิจทั้งหมด ({missions.length})
+          </h2>
+        </div>
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="animate-spin text-[#00a3ff]" size={30} />
+          </div>
+        ) : missions.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {missions.map(mission => {
+              // Map backend data to what MissionCard expects
+              const mappedMission = {
+                id: mission.id || mission._id,
+                title: mission.title,
+                thumbnail: mission.image || mission.images?.[0] || 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                assignee: { name: 'Foldery Team', avatar: 'https://ui-avatars.com/api/?name=Foldery+Team&background=00a3ff&color=fff' },
+                time: mission.createdAt ? new Date(mission.createdAt).toLocaleDateString('th-TH') : 'ไม่ระบุวันที่',
+                location: { name: mission.location?.address || 'ไม่ระบุสถานที่' }
+              };
 
-      </main>
+              return (
+                <MissionCard 
+                  key={mappedMission.id} 
+                  mission={mappedMission}
+                  onClick={() => navigate(`/mission/${mappedMission.id}`)}
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <p className="text-slate-500 font-light">ยังไม่มีข้อมูลพันธกิจในระบบ</p>
+          </div>
+        )}
+      </div>
 
-      <style jsx global>{`html { scroll-behavior: smooth; }`}</style>
     </div>
   );
 };
