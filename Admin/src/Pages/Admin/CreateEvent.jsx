@@ -288,15 +288,9 @@ const CreateEvent = () => {
   };
 
   return (
-    <>
-      <Toaster position="top-center" toastOptions={{
-        style: { background: '#1b2537', color: '#fff', border: '1px solid rgba(255,255,255,0.08)', fontFamily: 'Kanit, sans-serif' },
-        success: { iconTheme: { primary: '#00a3ff', secondary: '#fff' } },
-      }} />
+    <div className="min-h-screen bg-[#0d1522] font-['Kanit'] pb-20">
 
-      <div className="min-h-screen bg-[#0d1522] font-['Kanit'] pb-20">
-
-        {/* ─── TOP BAR ─── */}
+      {/* ─── TOP BAR ─── */}
         <div className="sticky top-0 z-40 bg-[#0d1522]/95 backdrop-blur-xl border-b border-white/5 px-5 md:px-10 py-4 flex items-center gap-4">
           <Link to="/admin/events" className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
             <ArrowLeft size={20} />
@@ -437,7 +431,6 @@ const CreateEvent = () => {
 
         </form>
       </div>
-    </>
   );
 };
 
