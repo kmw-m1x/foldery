@@ -2,15 +2,17 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, Map, Settings,
-  LogOut, Menu, X, ChevronRight, Calendar, UserPlus
+  LogOut, Menu, X, ChevronRight, Calendar, UserPlus, Home
 } from "lucide-react";
 import { useAuth } from "../Context/AuthContext";
 
 const navItems = [
   { to: "/admin/dashboard",      icon: <LayoutDashboard size={18} />, label: "Dashboard"       },
+  { to: "/admin/home",           icon: <Home size={18} />,            label: "Home Preview"    },
   { to: "/admin/church-stats",   icon: <Users size={18} />,           label: "Church Stats"    },
   { to: "/admin/update",         icon: <Users size={18} />,           label: "Mission Stats"   },
   { to: "/admin/provinces",      icon: <Map size={18} />,             label: "Province Stats"  },
+  { to: "/admin/events",         icon: <Calendar size={18} />,        label: "Manage Events"   },
   { to: "/admin/events/create",  icon: <Calendar size={18} />,        label: "Create Event"    },
   { to: "/admin/users",          icon: <UserPlus size={18} />,        label: "Admin Management"},
   { to: "/admin/settings",       icon: <Settings size={18} />,        label: "Settings"        },

@@ -279,7 +279,7 @@ const CreateEvent = () => {
         endDate:   form.endDate ? new Date(form.endDate) : undefined,
       });
       toast.success('สร้างกิจกรรมสำเร็จ! 🎉', { id: toastId });
-      setTimeout(() => navigate('/events'), 1000);
+      setTimeout(() => navigate('/admin/events'), 1000);
     } catch (err) {
       toast.error(err.response?.data?.message || 'เกิดข้อผิดพลาด', { id: toastId });
     } finally {
@@ -298,7 +298,7 @@ const CreateEvent = () => {
 
         {/* ─── TOP BAR ─── */}
         <div className="sticky top-0 z-40 bg-[#0d1522]/95 backdrop-blur-xl border-b border-white/5 px-5 md:px-10 py-4 flex items-center gap-4">
-          <Link to="/events" className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
+          <Link to="/admin/events" className="p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/5 transition-colors">
             <ArrowLeft size={20} />
           </Link>
           <div className="flex-1">

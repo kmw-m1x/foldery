@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../Context/AuthContext';
 import api from '../utils/axios';
-
+import Swal from 'sweetalert2';
 // Category accent colors
 const categoryColor = {
   Worship:    { bg: 'bg-blue-500/15',   text: 'text-blue-400',   border: 'border-blue-500/20'   },
@@ -66,14 +66,33 @@ const Events = () => {
   };
 
   const handleDelete = async (id) => {
-    if(!window.confirm("ต้องการลบกิจกรรมนี้ใช่หรือไม่?")) return;
-    try {
-      await api.delete(`/events/${id}`);
-      toast.success("ลบกิจกรรมสำเร็จ");
-      setEvents(events.filter(e => e._id !== id));
-    } catch(err) {
-      console.error(err);
-      toast.error("ลบไม่สำเร็จ");
+    const result = await Swal.fire({
+      title: 'ยืนยันการลบกิจกรรม?',
+      text: "หากลบแล้วจะไม่สามารถกู้คืนได้!",
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#1b2537',
+      color: '#ffffff',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#334155',
+      confirmButtonText: 'ใช่, ลบเลย!',
+      cancelButtonText: 'ยกเลิก',
+      customClass: {
+        popup: 'border border-white/10 rounded-2xl',
+        confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
+        cancelButton: 'rounded-xl px-5 py-2.5 font-bold'
+      }
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/events/${id}`);
+        toast.success("ลบกิจกรรมสำเร็จ");
+        setEvents(events.filter(e => e._id !== id));
+      } catch(err) {
+        console.error(err);
+        toast.error("ลบไม่สำเร็จ");
+      }
     }
   };
 

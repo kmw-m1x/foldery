@@ -81,6 +81,8 @@ function App() {
         <Route path="update" element={<Stats />} />
         <Route path="church-stats" element={<AdminChurchStats />} />
         <Route path="provinces" element={<ProvinceManager />} />
+        <Route path="home" element={<Home />} />
+        <Route path="events" element={<Events />} />
         <Route path="events/create" element={<CreateEvent />} />
         <Route path="users"          element={<UserManagement />} />
         <Route path="users/add"      element={<Register />} />
