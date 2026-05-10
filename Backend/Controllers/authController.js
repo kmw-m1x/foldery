@@ -36,8 +36,7 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body; // Use 'email' from frontend, map to 'username' in DB for simplicity, or change DB?
-    // Since the frontend form uses "email" (admin@mission.com), let's find by username using the email field
+    const { email, password } = req.body; 
     const username = email;
 
     const user = await User.findOne({ username });
@@ -58,12 +57,12 @@ exports.login = async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Set HttpOnly Cookie
+    // Set cookie for authentication
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      secure: true, 
+      sameSite: 'none', 
+      maxAge: 7 * 24 * 60 * 60 * 1000 
     });
 
     res.json({
@@ -83,13 +82,16 @@ exports.login = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
+  // Clear auth cookie
   res.clearCookie('token', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true, 
+    sameSite: 'none', 
   });
   res.json({ message: "ออกจากระบบสำเร็จ" });
 };
+
+
 
 exports.me = async (req, res) => {
   try {
