@@ -7,6 +7,8 @@ import {
   FileText, UploadCloud, Save, Loader2, Star,
   X, ImagePlus, CheckCircle2,
 } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '../../utils/cropImage';
 
 const API = '/events';
 
@@ -35,13 +37,24 @@ const Label = ({ icon, children, required }) => (
 
 const inputCls = 'w-full bg-[#0d1522] border border-white/8 rounded-xl px-4 py-3 text-white text-sm placeholder:text-slate-600 focus:outline-none focus:border-[#00a3ff]/60 focus:bg-[#0a0f1a] transition-all';
 
-// ─── Image Upload Zone ────────────────────────────────────────────────────────
+// ─── Image Upload & Crop Zone ──────────────────────────────────────────────────
 const ImageUploader = ({ value, onChange }) => {
   const inputRef  = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [dragging, setDragging]   = useState(false);
 
-  const doUpload = useCallback(async (file) => {
+  // Crop state
+  const [imageSrc, setImageSrc] = useState(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const [isCropping, setIsCropping] = useState(false);
+
+  const onCropComplete = useCallback((croppedArea, croppedAreaPixels) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleFileSelect = (file) => {
     if (!file) return;
     const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!allowed.includes(file.type)) {
@@ -53,43 +66,61 @@ const ImageUploader = ({ value, onChange }) => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageSrc(reader.result);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setIsCropping(true);
+    };
+    reader.readAsDataURL(file);
+    // reset input to allow picking the same file again if cancelled
+    if (inputRef.current) inputRef.current.value = '';
+  };
 
-    setUploading(true);
-    const toastId = toast.loading('กำลังอัปโหลดรูป...');
+  const handleCropSave = async () => {
     try {
+      setIsCropping(false);
+      setUploading(true);
+      const toastId = toast.loading('กำลังครอบตัดและอัปโหลดรูป...');
+      
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const formData = new FormData();
+      formData.append('image', croppedBlob, 'cropped.jpg');
+
       const res = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       onChange(res.data.url);
       toast.success('อัปโหลดสำเร็จ!', { id: toastId });
     } catch (err) {
-      toast.error('อัปโหลดล้มเหลว กรุณาลองใหม่', { id: toastId });
+      console.error(err);
+      toast.error('อัปโหลดล้มเหลว กรุณาลองใหม่');
     } finally {
       setUploading(false);
+      setImageSrc(null);
     }
-  }, [onChange]);
+  };
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) doUpload(file);
-  }, [doUpload]);
+    handleFileSelect(file);
+  }, []);
 
   const onPick = (e) => {
     const file = e.target.files?.[0];
-    if (file) doUpload(file);
+    handleFileSelect(file);
   };
 
   return (
     <div>
-      <Label icon={<ImagePlus size={13} />} required>ภาพปกกิจกรรม (Cover Image)</Label>
+      <Label icon={<ImagePlus size={13} />} required>ภาพปกกิจกรรม (Cover Image) อัตราส่วน 16:9</Label>
 
       {/* Preview */}
-      {value && !uploading && (
-        <div className="relative mb-3 h-44 rounded-2xl overflow-hidden border border-white/10 group">
+      {value && !uploading && !isCropping && (
+        <div className="relative mb-3 aspect-video rounded-2xl overflow-hidden border border-white/10 group">
           <img src={value} alt="preview" className="w-full h-full object-cover brightness-80" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
             <div className="flex items-center gap-2">
@@ -100,21 +131,21 @@ const ImageUploader = ({ value, onChange }) => {
           <button
             type="button"
             onClick={() => onChange('')}
-            className="absolute top-3 right-3 w-7 h-7 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100"
+            className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-red-500 rounded-full flex items-center justify-center text-white transition-colors opacity-0 group-hover:opacity-100 shadow-lg"
           >
-            <X size={14} />
+            <X size={16} />
           </button>
         </div>
       )}
 
       {/* Drop Zone */}
-      {!value && (
+      {!value && !isCropping && (
         <div
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           onClick={() => !uploading && inputRef.current?.click()}
-          className={`relative border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 py-10 cursor-pointer transition-all duration-200 ${
+          className={`relative border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-3 py-12 cursor-pointer transition-all duration-200 ${
             dragging
               ? 'border-[#00a3ff] bg-[#00a3ff]/5'
               : 'border-white/10 bg-[#0d1522] hover:border-[#00a3ff]/40 hover:bg-[#00a3ff]/5'
@@ -122,17 +153,17 @@ const ImageUploader = ({ value, onChange }) => {
         >
           {uploading ? (
             <>
-              <Loader2 size={28} className="animate-spin text-[#00a3ff]" />
-              <p className="text-slate-400 text-sm font-medium">กำลังอัปโหลด...</p>
+              <Loader2 size={32} className="animate-spin text-[#00a3ff]" />
+              <p className="text-[#00a3ff] text-sm font-bold mt-2 tracking-wide">กำลังอัปโหลด...</p>
             </>
           ) : (
             <>
-              <div className="w-12 h-12 rounded-2xl bg-[#00a3ff]/10 flex items-center justify-center">
-                <UploadCloud size={22} className="text-[#00a3ff]" />
+              <div className="w-14 h-14 rounded-2xl bg-[#00a3ff]/10 flex items-center justify-center mb-2">
+                <UploadCloud size={26} className="text-[#00a3ff]" />
               </div>
               <div className="text-center">
                 <p className="text-white text-sm font-bold">ลากรูปมาวาง หรือ คลิกเพื่อเลือกไฟล์</p>
-                <p className="text-slate-500 text-xs mt-1">JPG, PNG, WEBP · สูงสุด 10 MB</p>
+                <p className="text-slate-500 text-xs mt-1.5">ระบบจะบังคับครอบตัด (Crop) เป็นอัตราส่วน 16:9 ก่อนอัปโหลด</p>
               </div>
             </>
           )}
@@ -140,17 +171,87 @@ const ImageUploader = ({ value, onChange }) => {
       )}
 
       {/* Change button when image exists */}
-      {value && !uploading && (
+      {value && !uploading && !isCropping && (
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="mt-2 flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#00a3ff] font-bold transition-colors"
+          className="mt-3 flex items-center gap-2 text-xs text-slate-400 hover:text-[#00a3ff] font-bold transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl"
         >
-          <UploadCloud size={13} /> เปลี่ยนรูป
+          <UploadCloud size={14} /> เลือกรูปภาพใหม่
         </button>
       )}
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onPick} />
+
+      {/* Cropping Modal */}
+      {isCropping && imageSrc && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 md:p-6 backdrop-blur-sm">
+          <div className="bg-[#1b2537] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-white/5 flex items-center justify-between bg-[#131b2b]">
+              <div>
+                <h3 className="text-white font-black text-lg tracking-wide">ปรับขนาดรูปภาพ (Crop Image)</h3>
+                <p className="text-slate-400 text-xs mt-1">ลากเพื่อเลื่อน และใช้แถบเลื่อนด้านล่างเพื่อซูม</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsCropping(false)} 
+                className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500/20 hover:text-red-400 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="relative w-full h-[50vh] min-h-[300px] max-h-[500px] bg-black/80">
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={16 / 9}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+                objectFit="contain"
+              />
+            </div>
+
+            <div className="p-6 bg-[#0d1522] space-y-6">
+              <div className="max-w-md mx-auto">
+                <div className="flex justify-between text-xs font-bold text-slate-400 mb-3">
+                  <span>ซูมออก</span>
+                  <span className="text-[#00a3ff]">{Math.round(zoom * 100)}%</span>
+                  <span>ซูมเข้า</span>
+                </div>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  onChange={(e) => setZoom(e.target.value)}
+                  className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#00a3ff]"
+                />
+              </div>
+              
+              <div className="flex justify-center gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsCropping(false)}
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-slate-300 bg-white/5 hover:bg-white/10 hover:text-white transition-all w-32"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCropSave}
+                  className="px-6 py-3 rounded-xl text-sm font-bold text-white bg-[#00a3ff] hover:bg-[#0082cc] transition-all w-48 flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,163,255,0.3)] hover:shadow-[0_0_25px_rgba(0,163,255,0.5)]"
+                >
+                  <Save size={18} /> ยืนยันการตัดรูป
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
