@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 
 // เรียก Route (ทางเดิน API)
 const missionRoutes = require('./routes/missionRoutes');
@@ -24,6 +25,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// ให้ Frontend สามารถเข้าถึงไฟล์ที่อัปโหลดไว้ในโฟลเดอร์ uploads ได้
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // --- Routes Zone (ทางเดินรถ) ---
 
